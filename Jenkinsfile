@@ -1,23 +1,27 @@
-node{
-   stage('SCM Checkout'){
-     git 'https://github.com/javahometech/my-app'
-   }
-   stage('Compile-Package'){
-      // Get maven home path
-      def mvnHome =  tool name: 'maven-3', type: 'maven'   
-      sh "${mvnHome}/bin/mvn package"
-   }
-   stage('Email Notification'){
-      mail bcc: '', body: '''Hi Welcome to jenkins email alerts
-      Thanks
-      Hari''', cc: '', from: '', replyTo: '', subject: 'Jenkins Job', to: 'hari.kammana@gmail.com'
-   }
-   stage('Slack Notification'){
-       slackSend baseUrl: 'https://hooks.slack.com/services/',
-       channel: '#jenkins-pipeline-demo',
-       color: 'good', 
-       message: 'Welcome to Jenkins, Slack!', 
-       teamDomain: 'javahomecloud',
-       tokenCredentialId: 'slack-demo'
-   }
+pipeline {
+    agent any
+    tools {
+        Name: 'Maven', type: 'maven'
+    }
+    stages {
+        stage('Initialize') {
+            steps {
+                sh '''
+                    echo "PATH = ${PATH}"
+                    echo "M2_HOME = ${M2_HOME}/bin/mvn"
+                '''
+            }
+        }
+        stage('SCM Checkout') {
+            steps {
+            // Get source code from Gitlab repository
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github-jenkins-access', url: 'https://github.com/shareef242/java-my-app.git']]])
+            }
+        }
+        stage('Mvn Package') {
+            steps {
+                sh 'mvn -B -DskipTests clean package -e'
+            }
+        }      
+    }
 }
